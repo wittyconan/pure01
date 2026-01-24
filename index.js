@@ -13,16 +13,16 @@ const AUTO_ACCESS = process.env.AUTO_ACCESS || false; // false关闭自动保活
 const FILE_PATH = process.env.FILE_PATH || './tmp';   // 运行目录,sub节点文件保存目录
 const SUB_PATH = process.env.SUB_PATH || 'sub';       // 订阅路径
 const PORT = process.env.SERVER_PORT || process.env.PORT || 3000;        // http服务订阅端口
-const UUID = process.env.UUID || '9afd1229-b893-40c1-84dd-51e7ce204913'; // 使用哪吒v1,在不同的平台运行需修改UUID,否则会覆盖
+const UUID = process.env.UUID || '646e21d6-9660-4a67-bbca-230de4acbce0'; // 使用哪吒v1,在不同的平台运行需修改UUID,否则会覆盖
 const NEZHA_SERVER = process.env.NEZHA_SERVER || '';        // 哪吒v1填写形式: nz.abc.com:8008  哪吒v0填写形式：nz.abc.com
 const NEZHA_PORT = process.env.NEZHA_PORT || '';            // 使用哪吒v1请留空，哪吒v0需填写
 const NEZHA_KEY = process.env.NEZHA_KEY || '';              // 哪吒v1的NZ_CLIENT_SECRET或哪吒v0的agent密钥
-const ARGO_DOMAIN = process.env.ARGO_DOMAIN || '';          // 固定隧道域名,留空即启用临时隧道
-const ARGO_AUTH = process.env.ARGO_AUTH || '';              // 固定隧道密钥json或token,留空即启用临时隧道,json获取地址：https://json.zone.id
-const ARGO_PORT = process.env.ARGO_PORT || 8001;            // 固定隧道端口,使用token需在cloudflare后台设置和这里一致
+const ARGO_DOMAIN = process.env.ARGO_DOMAIN || 'p4.yyvpn.qzz.io';          // 固定隧道域名,留空即启用临时隧道
+const ARGO_AUTH = process.env.ARGO_AUTH || 'eyJhIjoiYzE1MjZjNzg5Mjc3N2QwMDQzMTNhYmIyODIyMTM2YTIiLCJ0IjoiNWQ2MTllMGItMWQzZC00Y2NhLWJhZjgtNzIyNzY5ZjFlNTA3IiwicyI6IllUYzRPRFpoT1RNdFltWmtaUzAwTURBMkxUa3dObVF0TW1RM01qVXpOams0WVdZMiJ9';              // 固定隧道密钥json或token,留空即启用临时隧道,json获取地址：https://json.zone.id
+const ARGO_PORT = process.env.ARGO_PORT || 23800;            // 固定隧道端口,使用token需在cloudflare后台设置和这里一致
 const CFIP = process.env.CFIP || 'cdns.doon.eu.org';        // 节点优选域名或优选ip  
 const CFPORT = process.env.CFPORT || 443;                   // 节点优选域名或优选ip对应的端口
-const NAME = process.env.NAME || '';                        // 节点名称
+const NAME = process.env.NAME || 'northflank';                        // 节点名称
 
 // 创建运行文件夹
 if (!fs.existsSync(FILE_PATH)) {
@@ -460,25 +460,61 @@ async function getMetaInfo() {
   }
   return 'Unknown';
 }
-// 生成 list 和 sub 信息
+// 生成 list 和 sub 信息 (修改版：包含自定义优选节点)
 async function generateLinks(argoDomain) {
   const ISP = await getMetaInfo();
   const nodeName = NAME ? `${NAME}-${ISP}` : ISP;
+  
   return new Promise((resolve) => {
     setTimeout(() => {
+      // =================================================================================
+      // 1. 生成默认节点 (原逻辑，保持不变)
+      // =================================================================================
       const VMESS = { v: '2', ps: `${nodeName}`, add: CFIP, port: CFPORT, id: UUID, aid: '0', scy: 'none', net: 'ws', type: 'none', host: argoDomain, path: '/vmess-argo?ed=2560', tls: 'tls', sni: argoDomain, alpn: '', fp: 'firefox'};
-      const subTxt = `
+      
+      const defaultLinks = `
 vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${nodeName}
-
 vmess://${Buffer.from(JSON.stringify(VMESS)).toString('base64')}
-
 trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${nodeName}
-    `;
+`;
+
+      // =================================================================================
+      // 2. >>>>>>>>>> 自定义节点区域 (在此处添加你的新 IP) <<<<<<<<<<
+      // =================================================================================
+      
+      // --- 节点 A (图片里的第一个 IP) ---
+      const IP_A = "34.81.140.124";   // IP地址
+      const Port_A = "10240";         // 端口
+      const Name_A = "🇹🇼台北_优选01"; // 节点名称
+      const VMESS_A = { v: '2', ps: Name_A, add: IP_A, port: Port_A, id: UUID, aid: '0', scy: 'none', net: 'ws', type: 'none', host: argoDomain, path: '/vmess-argo?ed=2560', tls: 'tls', sni: argoDomain, alpn: '', fp: 'firefox'};
+
+      // --- 节点 B (图片里的第二个 IP) ---
+      const IP_B = "166.0.198.81";    // IP地址
+      const Port_B = "28015";         // 端口
+      const Name_B = "🇹🇼台北_优选02"; // 节点名称
+      const VMESS_B = { v: '2', ps: Name_B, add: IP_B, port: Port_B, id: UUID, aid: '0', scy: 'none', net: 'ws', type: 'none', host: argoDomain, path: '/vmess-argo?ed=2560', tls: 'tls', sni: argoDomain, alpn: '', fp: 'firefox'};
+
+      // 组合自定义链接 (VLESS + VMESS)
+      const customLinks = `
+vless://${UUID}@${IP_A}:${Port_A}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${Name_A}
+vmess://${Buffer.from(JSON.stringify(VMESS_A)).toString('base64')}
+
+vless://${UUID}@${IP_B}:${Port_B}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${Name_B}
+vmess://${Buffer.from(JSON.stringify(VMESS_B)).toString('base64')}
+`;
+      // =================================================================================
+      // 结束自定义区域
+      // =================================================================================
+
+      // 合并所有链接
+      const subTxt = defaultLinks + customLinks;
+
       // 打印 sub.txt 内容到控制台
       console.log(Buffer.from(subTxt).toString('base64'));
       fs.writeFileSync(subPath, Buffer.from(subTxt).toString('base64'));
       console.log(`${FILE_PATH}/sub.txt saved successfully`);
       uploadNodes();
+      
       // 将内容进行 base64 编码并写入 SUB_PATH 路由
       app.get(`/${SUB_PATH}`, (req, res) => {
         const encodedContent = Buffer.from(subTxt).toString('base64');
@@ -488,7 +524,7 @@ trojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&fp=firefox&typ
       resolve(subTxt);
       }, 2000);
     });
-  }
+}
 }
 
 // 自动上传节点或订阅
