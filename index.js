@@ -22,8 +22,8 @@ const PORT = process.env.SERVER_PORT || process.env.PORT || 3000;
 const UUID = process.env.UUID || '646e21d6-9660-4a67-bbca-230de4acbce0'; 
 const ARGO_DOMAIN = process.env.ARGO_DOMAIN || 'p4.yyvpn.qzz.io';         
 const ARGO_AUTH = process.env.ARGO_AUTH || 'eyJhIjoiYzE1MjZjNzg5Mjc3N2QwMDQzMTNhYmIyODIyMTM2YTIiLCJ0IjoiNWQ2MTllMGItMWQzZC00Y2NhLWJhZjgtNzIyNzY5ZjFlNTA3IiwicyI6IllUYzRPRFpoT1RNdFltWmtaUzAwTURBMkxUa3dObVF0TW1RM01qVXpOams0WVdZMiJ9'; 
-const ARGO_PORT = process.env.ARGO_PORT || 8001;      
-const CFIP = process.env.CFIP || 'www.visa.com.sg';   
+const ARGO_PORT = process.env.ARGO_PORT || 8001;      // 保持 8001 
+const CFIP = process.env.CFIP || 'www.visa.com.sg';   // 默认优选域名
 const CFPORT = process.env.CFPORT || 443;             
 const NAME = process.env.NAME || 'Northflank';        
 
@@ -33,7 +33,7 @@ const NEZHA_PORT = process.env.NEZHA_PORT || '';
 const NEZHA_KEY = process.env.NEZHA_KEY || '';        
 
 // ==============================================================================
-// 全局变量存储订阅内容
+// 全局变量存储订阅内容 (防 404)
 // ==============================================================================
 let GLOBAL_SUB_CONTENT = "System initializing... Please wait 30-60 seconds and refresh this page."; 
 
@@ -209,48 +209,21 @@ async function getMetaInfo() {
 }
 
 // =================================================================================
-// ★★★ 生成链接（包含默认节点 + 你的自定义测试节点） ★★★
+// ★★★ 生成链接 (纯净版：只包含自动生成的默认节点) ★★★
 // =================================================================================
 async function generateLinks(argoDomain) {
   const ISP = await getMetaInfo();
   const nodeName = NAME ? `${NAME}-${ISP}` : ISP;
 
   setTimeout(() => {
-      // 1. 默认节点 (你自己的服务器节点)
+      // 生成默认节点 (基于环境变量 CFIP)
       const VMESS = { v: '2', ps: `${nodeName}`, add: CFIP, port: CFPORT, id: UUID, aid: '0', scy: 'none', net: 'ws', type: 'none', host: argoDomain, path: '/vmess-argo?ed=2560', tls: 'tls', sni: argoDomain, alpn: '', fp: 'firefox'};
       const defaultLinks = `vless://${UUID}@${CFIP}:${CFPORT}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${nodeName}\nvmess://${Buffer.from(JSON.stringify(VMESS)).toString('base64')}\ntrojan://${UUID}@${CFIP}:${CFPORT}?security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Ftrojan-argo%3Fed%3D2560#${nodeName}\n`;
 
-      // 2. 自定义台北节点 (之前添加的)
-      const IP_A = "34.81.140.124";
-      const Port_A = "10240";
-      const Name_A = "🇹🇼台北_优选01";
-      const VMESS_A = { v: '2', ps: Name_A, add: IP_A, port: Port_A, id: UUID, aid: '0', scy: 'none', net: 'ws', type: 'none', host: argoDomain, path: '/vmess-argo?ed=2560', tls: 'tls', sni: argoDomain, alpn: '', fp: 'firefox'};
-
-      const IP_B = "166.0.198.81";
-      const Port_B = "28015";
-      const Name_B = "🇹🇼台北_优选02";
-      const VMESS_B = { v: '2', ps: Name_B, add: IP_B, port: Port_B, id: UUID, aid: '0', scy: 'none', net: 'ws', type: 'none', host: argoDomain, path: '/vmess-argo?ed=2560', tls: 'tls', sni: argoDomain, alpn: '', fp: 'firefox'};
-
-      const customLinks = `vless://${UUID}@${IP_A}:${Port_A}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${Name_A}\nvmess://${Buffer.from(JSON.stringify(VMESS_A)).toString('base64')}\nvless://${UUID}@${IP_B}:${Port_B}?encryption=none&security=tls&sni=${argoDomain}&fp=firefox&type=ws&host=${argoDomain}&path=%2Fvless-argo%3Fed%3D2560#${Name_B}\nvmess://${Buffer.from(JSON.stringify(VMESS_B)).toString('base64')}\n`;
-
-      // 3. ★★★ 批量添加你的测试节点 (直接粘贴的字符串) ★★★
-      const TEST_NODES = `
-vless://e258977b-e413-4718-a3af-02d75492c349@8.223.63.150:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E9%A6%99%E6%B8%AF21.01MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@35.221.210.167:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E5%8F%B0%E6%B9%BE28.00MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@34.143.195.43:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E6%96%B0%E5%8A%A0%E5%9D%A111.30MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@34.92.187.216:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E6%96%B0%E5%8A%A0%E5%9D%A110.98MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@153.121.45.101:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E6%97%A5%E6%9C%AC13.24MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@38.47.109.147:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E6%97%A5%E6%9C%AC13.72MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@20.24.65.17:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E9%A6%99%E6%B8%AF14.25MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@154.194.0.201:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E8%8D%B7%E5%85%B015.27MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@47.79.91.168:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E6%97%A5%E6%9C%AC12.89MB%2Fs
-vless://e258977b-e413-4718-a3af-02d75492c349@www.wto.org:443?encryption=none&security=tls&sni=tw-f0n.pages.dev&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1&insecure=0&allowInsecure=0&ech=AEX%2BDQBB2QAgACCtazpSbFmSGI4wZhXFhkJ4h0Zm4SmDaFoiUU8yxn43MAAEAAEAAQASY2xvdWRmbGFyZS1lY2guY29tAAA%3D&type=ws&host=tw-f0n.pages.dev&path=%2F%3Fed%3D2095#%E9%98%BF%E7%89%9B-%E4%BC%98%E9%80%89%E5%9F%9F%E5%90%8D
-`;
-
-      // 更新全局变量，页面刷新即变 (注意：这里把 TEST_NODES 加上去了)
-      GLOBAL_SUB_CONTENT = Buffer.from(defaultLinks + customLinks + TEST_NODES).toString('base64');
+      // 更新全局变量
+      GLOBAL_SUB_CONTENT = Buffer.from(defaultLinks).toString('base64');
       
-      console.log("Links generated (Included your custom test nodes)!");
+      console.log("Links generated (Clean version)!");
       uploadNodes();
   }, 2000);
 }
@@ -260,13 +233,13 @@ async function extractDomains() {
     console.log('ARGO_DOMAIN:', ARGO_DOMAIN);
     await generateLinks(ARGO_DOMAIN);
   } else {
-      // 临时隧道逻辑省略，你用的是固定隧道
+     // 临时隧道逻辑省略
   }
 }
 
 async function uploadNodes() {
   if (!UPLOAD_URL) return;
-  // ... (上传逻辑省略，保持原样)
+  // ... (上传逻辑保持不变)
 }
 
 function cleanFiles() {
